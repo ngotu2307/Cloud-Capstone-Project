@@ -14,8 +14,23 @@ export async function getTodos(idToken: string): Promise<Todo[]> {
     },
   })
   console.log('Todos:', response.data)
-  return response.data.items
+  let responseTodos = response.data.items
+  let resultTodo: Todo[] = [];
+  for (const todo of responseTodos) {
+    const updatedTodo: Todo = { 
+      ...todo, 
+      done: todo.done == 1 ? true : false
+    };
+    resultTodo.push(updatedTodo);
+  }
+
+  return resultTodo
 }
+
+// map(todoItem => ({
+//   ...todoItem, 
+//   done: todoItem.done == 1 ? true : false
+// })
 
 export async function getTodosFilter(idToken: string, filter: string): Promise<Todo[]> {
   console.log('Fetching todos filter')
@@ -74,6 +89,18 @@ export async function deleteTodo(
   todoId: string
 ): Promise<void> {
   await Axios.delete(`${apiEndpoint}/todos/${todoId}`, {
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${idToken}`
+    }
+  })
+}
+
+export async function removeUploadUrl(
+  idToken: string,
+  todoId: string
+): Promise<void> {
+  await Axios.patch(`${apiEndpoint}/todos/${todoId}/removeUploadUrl`, JSON.stringify(''), {
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${idToken}`

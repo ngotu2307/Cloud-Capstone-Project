@@ -7,6 +7,10 @@ import { TodoUpdate } from '../models/TodoUpdate'
 import * as AWSXRay from 'aws-xray-sdk'
 const XAWS = AWSXRay.captureAWS(AWS)
 
+const s3 = new XAWS.S3({
+  signatureVersion: 'v4'
+})
+
 const logger = createLogger('todosAccess')
 
 export class TodosAccess {
@@ -171,6 +175,9 @@ export class TodosAccess {
     }
     const result =  await this.docClient.delete(params).promise();
     const item = result.Attributes;
+
+    // also delete in S3
+    await this.deleteTodoObject(todoId)
     return item as TodoItem;
   }
 
@@ -208,5 +215,32 @@ export class TodosAccess {
       Expires: Number(this.urlExpiration)
     })
     return uploadUrl
+  }
+
+  async removeTodoUrl(
+    todoId: string
+  ): Promise<TodoItem> {
+    logger.info('Remove url with todoId: ' + todoId)
+
+    const params = {
+      TableName: this.todosTable,
+        Key: { 
+            todoId
+        },
+        ExpressionAttributeNames: {"#A": "attachmentUrl"},
+        UpdateExpression: "remove #A",
+        ReturnValues: "UPDATED_NEW"
+    }
+
+    const result = await this.docClient.update(params).promise();
+    return result.Attributes as TodoItem;
+  }
+
+  async deleteTodoObject(todoId: string){
+    const params = {
+        Bucket: this.bucketName, 
+        Key: todoId
+    }
+    await s3.deleteObject(params).promise();
   }
 }

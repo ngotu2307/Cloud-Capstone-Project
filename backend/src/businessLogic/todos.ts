@@ -134,3 +134,14 @@ export async function generateUploadUrl(attachmentId: string): Promise<string> {
     return uploadUrl
 }
 
+export async function removeTodoUrl(userId: string, todoId: string): Promise<TodoItem> {
+    const item = await todosAccess.getTodoItem(todoId)
+
+    if (!item) throw new Error('Item not found!')
+    if (item.userId !== userId) {
+        throw new Error('User invalid!')
+    }
+
+    return todosAccess.removeTodoUrl(todoId)
+}
+

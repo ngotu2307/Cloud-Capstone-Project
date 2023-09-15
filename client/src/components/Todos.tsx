@@ -16,7 +16,7 @@ import {
   Form, Radio
 } from 'semantic-ui-react'
 
-import { createTodo, deleteTodo, getTodos, getTodosFilter, getTodosSort, patchTodo } from '../api/todos-api'
+import { createTodo, deleteTodo, getTodos, getTodosFilter, getTodosSort, patchTodo, removeUploadUrl } from '../api/todos-api'
 import Auth from '../auth/Auth'
 import { Todo } from '../types/Todo'
 
@@ -58,6 +58,20 @@ export class Todos extends React.PureComponent<TodosProps, TodosState> {
       })
     } catch (e) {
       alert(`Failed to fetch todos: ${(e as Error).message}`)
+    }
+  }
+
+  onTodoRemoveUploadUrl = async (position: number) => {
+    try {
+      const todo = this.state.todos[position]
+      await removeUploadUrl(this.props.auth.getIdToken(), todo.todoId)
+      this.setState({
+        todos: update(this.state.todos, {
+          [position]: { attachmentUrl: { $set: '' } }
+        })
+      })
+    } catch {
+      alert('Remove URL fail')
     }
   }
 
@@ -200,6 +214,7 @@ export class Todos extends React.PureComponent<TodosProps, TodosState> {
                   type="radio"
                   value="Default"
                   checked={this.state.sortAsc === 0}
+                  onChange={() => {}}
                 />
                 Default
               </label>
@@ -266,8 +281,8 @@ export class Todos extends React.PureComponent<TodosProps, TodosState> {
             <Grid.Row key={todo.todoId}>
               <Grid.Column width={1} verticalAlign="middle">
                 <Checkbox
+                  checked={todo.done}
                   onChange={() => this.onTodoCheck(pos)}
-                  checked={todo.done == 1 ? true : false}
                 />
               </Grid.Column>
               <Grid.Column width={6} verticalAlign="middle">
@@ -293,12 +308,17 @@ export class Todos extends React.PureComponent<TodosProps, TodosState> {
                   icon
                   color="red"
                   onClick={() => this.onTodoDelete(todo.todoId)}
-                >
+                  >
                   <Icon name="delete" />
                 </Button>
               </Grid.Column>
               {todo.attachmentUrl && (
-                <Image src={todo.attachmentUrl} size="small" wrapped />
+                <Grid.Column width={10} verticalAlign="middle">
+                  <Image src={todo.attachmentUrl} size="small" wrapped />
+                  <Button icon color="red" size="mini" onClick={() => this.onTodoRemoveUploadUrl(pos)} >
+                    <Icon name="delete" />
+                  </Button>
+                </Grid.Column>
               )}
               <Grid.Column width={16}>
                 <Divider />
